@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>AlchemistMod</AssemblyName>
+    <RootNamespace>AlchemistMod</RootNamespace>
+    <Version>0.1.0</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>disable</Nullable>
+    <DebugType>portable</DebugType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Game assemblies are stripped reference libs. Silence version mismatch noise. -->
+    <NoWarn>$(NoWarn);MSB3277;CS0618;NU1603;NU1701</NoWarn>
+  </PropertyGroup>
+
+  <!-- Offline build needs no packages, so don't touch the network during restore. -->
+  <PropertyGroup Condition="'$(RoR2LibsDir)' != ''">
+    <RestoreSources>$(MSBuildThisFileDirectory)</RestoreSources>
+  </PropertyGroup>
+
+  <!--
+    Default build: pulls stripped RoR2 / BepInEx reference libraries from NuGet
+    (nuget.org + nuget.bepinex.dev, see nuget.config).
+
+    Offline build: pass -p:RoR2LibsDir=path/to/folder containing the dlls listed below
+    (for example your game's Risk of Rain 2_Data/Managed folder plus BepInEx/core and
+    the R2API dlls from your r2modman profile).
+  -->
+  <ItemGroup Condition="'$(RoR2LibsDir)' == ''">
+    <PackageReference Include="BepInEx.Core" Version="5.4.21" />
+    <PackageReference Include="RiskOfRain2.GameLibs" Version="1.5.0-r.1" />
+    <PackageReference Include="UnityEngine.Modules" Version="2021.3.33" IncludeAssets="compile" />
+    <PackageReference Include="R2API.Core" Version="5.3.0" />
+    <PackageReference Include="R2API.Prefab" Version="1.1.1" />
+    <PackageReference Include="R2API.Language" Version="1.1.0" />
+    <PackageReference Include="R2API.Dot" Version="1.1.3" />
+    <PackageReference Include="R2API.DamageType" Version="1.1.7" />
+    <PackageReference Include="R2API.RecalculateStats" Version="1.7.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RoR2LibsDir)' != ''">
+    <Reference Include="$(RoR2LibsDir)/*.dll" Private="false" />
+  </ItemGroup>
+
+</Project>
