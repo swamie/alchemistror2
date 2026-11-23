@@ -14,7 +14,7 @@ namespace AlchemistMod.Effects
     {
         public const float LacerationDuration = 5f;
         public const float InfectionDuration = 6f;
-        public const float InfectionBonusPerLaceration = 0.5f;
+        public const float InfectionBonusPerLaceration = 0.35f;
         public const float PlagueStackDuration = 3f;
         public const float ConfuseDuration = 3f;
         public const float MiasmaSpreadRadius = 15f;
@@ -67,7 +67,7 @@ namespace AlchemistMod.Effects
                     dotIndex = DotController.DotIndex.Burn,
                     duration = 4f,
                     damageMultiplier = 1f,
-                    totalDamage = info.damage * 0.6f,
+                    totalDamage = info.damage * 0.5f,
                 };
                 DotController.InflictDot(ref dot);
             }
@@ -98,7 +98,7 @@ namespace AlchemistMod.Effects
 
             if (info.HasModdedDamageType(Debuffs.Catalyst))
             {
-                CatalystBonus(report, victim, attackerObject);
+                CatalystBonus(report, victim, attackerObject, extendDots: !info.HasModdedDamageType(Debuffs.GasTick));
             }
 
             if (info.HasModdedDamageType(Debuffs.Miasma))
@@ -163,12 +163,12 @@ namespace AlchemistMod.Effects
             Util.PlaySound("Play_acrid_R_infect", victim.gameObject);
         }
 
-        private static void CatalystBonus(DamageReport report, CharacterBody victim, GameObject attacker)
+        private static void CatalystBonus(DamageReport report, CharacterBody victim, GameObject attacker, bool extendDots)
         {
             int debuffs = Debuffs.CountUniqueDebuffs(victim);
 
             DotController dot = DotController.FindDotController(victim.gameObject);
-            if (dot && dot.dotStackList != null)
+            if (extendDots && dot && dot.dotStackList != null)
             {
                 foreach (DotController.DotStack stack in dot.dotStackList)
                 {
@@ -181,7 +181,7 @@ namespace AlchemistMod.Effects
             {
                 attacker = attacker,
                 inflictor = attacker,
-                damage = report.damageInfo.damage * 0.5f * debuffs,
+                damage = report.damageInfo.damage * 0.25f * debuffs,
                 crit = report.damageInfo.crit,
                 procCoefficient = 0f,
                 position = victim.corePosition,

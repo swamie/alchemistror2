@@ -25,7 +25,7 @@ namespace AlchemistMod.Items
 
         public const float BaseInterval = 3.5f;
         public const float Range = 45f;
-        public const float PeckDamageCoefficient = 1.5f;
+        public const float PeckDamageCoefficient = 1f;
         public const float DebuffExtension = 1f;
 
         public static void Init()
@@ -61,11 +61,12 @@ namespace AlchemistMod.Items
                 ItemDef.pickupModelPrefab = CrowModelPrefab;
             }
 
+            ItemDef.pickupIconSprite = Icons.Get("item_crow");
             AlchemistContentPack.ItemDefs.Add(ItemDef);
             RoR2Application.onLoad += () =>
             {
                 if (!ItemDef.pickupIconSprite && RoR2Content.Items.JumpBoost)
-                    ItemDef.pickupIconSprite = RoR2Content.Items.JumpBoost.pickupIconSprite; // TODO: real icon
+                    ItemDef.pickupIconSprite = RoR2Content.Items.JumpBoost.pickupIconSprite;
             };
         }
 

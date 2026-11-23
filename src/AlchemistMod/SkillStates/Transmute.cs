@@ -19,8 +19,8 @@ namespace AlchemistMod.SkillStates
         public static float baseDuration = 0.6f;
         public static float detonateFraction = 0.4f;
         public static float radius = 25f;
-        public static float remainingDamageMultiplier = 1.5f;
-        public static float flatDamageCoefficient = 3f;
+        public static float remainingDamageMultiplier = 1f;   // also scaled by Festering
+        public static float flatDamageCoefficient = 2f;
 
         private static GameObject explosionEffect;
 
@@ -70,7 +70,7 @@ namespace AlchemistMod.SkillStates
 
             foreach (CharacterBody victim in targets)
             {
-                float remaining = ConsumeOwnDots(victim);
+                float remaining = ConsumeOwnDots(victim) * Fester.MultiplierFor(victim);
                 float damage = damageStat * flatDamageCoefficient + remaining * remainingDamageMultiplier;
 
                 var info = new DamageInfo

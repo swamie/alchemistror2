@@ -1,13 +1,16 @@
+using AlchemistMod.Content;
 using RoR2;
 using RoR2.Skills;
+using RoR2.UI;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace AlchemistMod.Potions
 {
     /// <summary>
     /// Lives on the Alchemist body. Tracks which of the three equipped potions is active,
-    /// lets the local player cycle them with the scroll wheel, and swaps the primary skill
-    /// to match so the HUD icon, name and tooltip always show the active potion.
+    /// lets the local player cycle them with the scroll wheel, owns the shared throw cooldown,
+    /// and swaps the primary skill to match so the HUD icon and tooltip show the active potion.
     /// </summary>
     public class PotionSelector : MonoBehaviour
     {
@@ -19,8 +22,21 @@ namespace AlchemistMod.Potions
         private readonly GenericSkill[] belt = new GenericSkill[BeltSize];
         private SkillDef appliedOverride;
         private float scrollCooldown;
+        private float throwReadyTime;
+
+        private PotionBeltHud hud;
 
         public int SelectedSlot { get; private set; }
+
+        /// <summary>True when the shared potion throw cooldown has finished.</summary>
+        public bool ThrowReady => Time.time >= throwReadyTime;
+
+        public float ThrowCooldownRemaining => Mathf.Max(0f, throwReadyTime - Time.time);
+
+        public void StartThrowCooldown(float seconds)
+        {
+            throwReadyTime = Time.time + seconds;
+        }
 
         internal PotionDef CurrentPotion => GetPotion(SelectedSlot);
 
@@ -49,8 +65,9 @@ namespace AlchemistMod.Potions
             // syncs back can fight the local choice.
             if (!body || !body.hasEffectiveAuthority) return;
 
-            // The belt can be filled in late, so keep the primary in sync every frame.
             SyncPrimary();
+            if (body.isPlayerControlled && AlchemistConfig.ShowPotionHud.Value && !hud)
+                hud = PotionBeltHud.TryCreate(this, body);
 
             if (Time.timeScale == 0f) return;
 
@@ -73,7 +90,7 @@ namespace AlchemistMod.Potions
                 scrollCooldown = 0.08f; // avoid skipping two potions on one fast notch
                 SelectedSlot = (SelectedSlot + step + BeltSize) % BeltSize;
                 SyncPrimary();
-                Util.PlaySound("Play_bandit2_m2_alt_throw", gameObject);
+                Util.PlaySound("Play_UI_menuClick", gameObject);
             }
         }
 
@@ -95,36 +112,132 @@ namespace AlchemistMod.Potions
         {
             if (appliedOverride && skillLocator && skillLocator.primary)
                 skillLocator.primary.UnsetSkillOverride(this, appliedOverride, GenericSkill.SkillOverridePriority.Upgrade);
+            if (hud) Destroy(hud.gameObject);
+        }
+    }
+
+    /// <summary>
+    /// Three potion icons sitting just above the skill bar in the real game HUD.
+    /// The active potion is full size and bright, the others are smaller and dimmed.
+    /// </summary>
+    internal class PotionBeltHud : MonoBehaviour
+    {
+        private PotionSelector selector;
+        private RectTransform[] slots;
+        private Image[] icons;
+        private Image[] frames;
+        private Image cooldownShade;
+
+        public static PotionBeltHud TryCreate(PotionSelector selector, CharacterBody body)
+        {
+            foreach (HUD hudInstance in HUD.readOnlyInstanceList)
+            {
+                if (!hudInstance || hudInstance.targetBodyObject != body.gameObject) continue;
+                if (hudInstance.skillIcons == null || hudInstance.skillIcons.Length == 0 || !hudInstance.skillIcons[0]) continue;
+                return Build(selector, hudInstance);
+            }
+            return null;
         }
 
-        // ---- Simple on-screen belt. Placeholder until a proper HUD element is built. ----
-
-        private static GUIStyle boxStyle;
-
-        private void OnGUI()
+        private static PotionBeltHud Build(PotionSelector selector, HUD hudInstance)
         {
-            if (!AlchemistConfig.ShowPotionHud.Value || !body || !body.hasEffectiveAuthority || !body.isPlayerControlled) return;
-            if (boxStyle == null)
+            var primaryIcon = (RectTransform)hudInstance.skillIcons[0].transform;
+            RectTransform parent = (RectTransform)primaryIcon.parent;
+
+            var root = new GameObject("AlchemistPotionBelt", typeof(RectTransform));
+            var rootRect = (RectTransform)root.transform;
+            rootRect.SetParent(parent, false);
+            var layoutElement = root.AddComponent<LayoutElement>();
+            layoutElement.ignoreLayout = true; // don't get pushed around by the skill bar's layout group
+
+            var hud = root.AddComponent<PotionBeltHud>();
+            hud.selector = selector;
+            hud.slots = new RectTransform[PotionSelector.BeltSize];
+            hud.icons = new Image[PotionSelector.BeltSize];
+            hud.frames = new Image[PotionSelector.BeltSize];
+
+            // Sit right above the primary skill icon, same size, laid out to the right like the skill bar.
+            Vector2 iconSize = primaryIcon.rect.size;
+            if (iconSize.x < 1f) iconSize = new Vector2(64f, 64f);
+            float slotSize = iconSize.x * 0.8f;
+            float gap = iconSize.x * 0.12f;
+
+            rootRect.anchorMin = primaryIcon.anchorMin;
+            rootRect.anchorMax = primaryIcon.anchorMax;
+            rootRect.pivot = new Vector2(0f, 0f);
+            rootRect.sizeDelta = new Vector2(slotSize * 3 + gap * 2, slotSize);
+            Vector2 primaryBottomLeft = primaryIcon.anchoredPosition - Vector2.Scale(primaryIcon.pivot, iconSize);
+            rootRect.anchoredPosition = primaryBottomLeft + new Vector2(0f, iconSize.y + gap * 1.5f);
+
+            for (int i = 0; i < PotionSelector.BeltSize; i++)
             {
-                boxStyle = new GUIStyle(GUI.skin.box) { fontSize = 14, alignment = TextAnchor.MiddleCenter, wordWrap = true };
+                var slot = new GameObject("Slot" + i, typeof(RectTransform));
+                var rect = (RectTransform)slot.transform;
+                rect.SetParent(rootRect, false);
+                rect.anchorMin = rect.anchorMax = new Vector2(0f, 0f);
+                rect.pivot = new Vector2(0.5f, 0f);
+                rect.sizeDelta = new Vector2(slotSize, slotSize);
+                rect.anchoredPosition = new Vector2(slotSize * 0.5f + i * (slotSize + gap), 0f);
+
+                var frame = slot.AddComponent<Image>();
+                frame.color = new Color(0f, 0f, 0f, 0.6f);
+
+                var iconGo = new GameObject("Icon", typeof(RectTransform));
+                var iconRect = (RectTransform)iconGo.transform;
+                iconRect.SetParent(rect, false);
+                iconRect.anchorMin = Vector2.zero;
+                iconRect.anchorMax = Vector2.one;
+                iconRect.offsetMin = new Vector2(3f, 3f);
+                iconRect.offsetMax = new Vector2(-3f, -3f);
+                var icon = iconGo.AddComponent<Image>();
+                icon.preserveAspect = true;
+
+                hud.slots[i] = rect;
+                hud.frames[i] = frame;
+                hud.icons[i] = icon;
             }
 
-            const float width = 130f, height = 36f, gap = 6f;
-            float total = BeltSize * width + (BeltSize - 1) * gap;
-            float x = (Screen.width - total) / 2f;
-            float y = Screen.height * 0.78f;
+            // dark fill over the active slot while the shared throw cooldown runs
+            var shadeGo = new GameObject("Cooldown", typeof(RectTransform));
+            var shadeRect = (RectTransform)shadeGo.transform;
+            shadeRect.anchorMin = Vector2.zero;
+            shadeRect.anchorMax = Vector2.one;
+            shadeRect.offsetMin = shadeRect.offsetMax = Vector2.zero;
+            hud.cooldownShade = shadeGo.AddComponent<Image>();
+            hud.cooldownShade.color = new Color(0f, 0f, 0f, 0.55f);
+            hud.cooldownShade.type = Image.Type.Filled;
+            hud.cooldownShade.fillMethod = Image.FillMethod.Vertical;
+            hud.cooldownShade.fillOrigin = 0;
 
-            for (int i = 0; i < BeltSize; i++)
+            return hud;
+        }
+
+        private void LateUpdate()
+        {
+            if (!selector)
             {
-                PotionDef potion = GetPotion(i);
-                string label = potion != null ? potion.name : "-";
-                Color old = GUI.color;
-                GUI.color = i == SelectedSlot
-                    ? (potion != null ? Color.Lerp(potion.color, Color.white, 0.35f) : Color.white)
-                    : new Color(1f, 1f, 1f, 0.45f);
-                GUI.Box(new Rect(x + i * (width + gap), y, width, height), (i == SelectedSlot ? "> " : "") + label, boxStyle);
-                GUI.color = old;
+                Destroy(gameObject);
+                return;
             }
+
+            for (int i = 0; i < PotionSelector.BeltSize; i++)
+            {
+                PotionDef potion = selector.GetPotion(i);
+                bool active = i == selector.SelectedSlot;
+                icons[i].sprite = potion != null ? Icons.Get(potion.iconName) : null;
+                icons[i].enabled = icons[i].sprite;
+                icons[i].color = active ? Color.white : new Color(0.55f, 0.55f, 0.55f, 0.8f);
+                frames[i].color = active && potion != null
+                    ? new Color(potion.color.r, potion.color.g, potion.color.b, 0.95f)
+                    : new Color(0f, 0f, 0f, 0.6f);
+                slots[i].localScale = Vector3.one * (active ? 1f : 0.8f);
+            }
+
+            RectTransform activeSlot = slots[selector.SelectedSlot];
+            if (cooldownShade.transform.parent != activeSlot) cooldownShade.transform.SetParent(activeSlot, false);
+            float remaining = selector.ThrowCooldownRemaining;
+            cooldownShade.enabled = remaining > 0f;
+            cooldownShade.fillAmount = Mathf.Clamp01(remaining / Mathf.Max(0.01f, SkillStates.ThrowPotion.sharedCooldown));
         }
     }
 }

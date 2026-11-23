@@ -48,6 +48,10 @@ namespace AlchemistMod.Survivor
             var controller = model.GetComponent<ModelSkinController>();
             if (!controller) controller = model.gameObject.AddComponent<ModelSkinController>();
 
+            // The placeholder's own default skin carries its meshes and materials. In current game
+            // versions the prefab can be blank until a skin is applied, so every Alchemist skin copies it.
+            SkinDef placeholderDefault = controller.skins != null && controller.skins.Length > 0 ? controller.skins[0] : null;
+
             var skinDefs = new List<SkinDef>();
             foreach (SkinInfo info in Skins)
             {
@@ -65,11 +69,10 @@ namespace AlchemistMod.Survivor
                     AlchemistContentPack.UnlockableDefs.Add(info.unlockable);
                 }
 
-                SkinDef skin = CreateEmptySkinDef();
+                SkinDef skin = CreateSkinDef(placeholderDefault, model.gameObject);
                 skin.name = "skinAlchemist" + info.key;
                 skin.nameToken = AlchemistPlugin.Prefix + "SKIN_" + info.key + "_NAME";
                 skin.icon = MakeIcon(info);
-                skin.rootObject = model.gameObject;
                 skin.unlockableDef = info.unlockable;
                 skinDefs.Add(skin);
             }
@@ -85,11 +88,13 @@ namespace AlchemistMod.Survivor
         }
 
         /// <summary>
-        /// SkinDef.Awake bakes the skin straight away and fails while rootObject is still null,
-        /// so skip Awake while we create it. The game bakes it later on first use.
-        /// The skin itself changes nothing on the model; AlchemistSkinTint does the recolour.
+        /// Each Alchemist skin is an exact copy of the placeholder's default skin (same meshes,
+        /// materials, renderer paths), so the model always shows up. Its rootObject stays pointing at
+        /// the original model, which keeps the baked renderer paths correct; they match our clone.
+        /// AlchemistSkinTint then recolours per skin. Awake is skipped while copying because it bakes
+        /// eagerly; the game bakes the skin on first use instead.
         /// </summary>
-        private static SkinDef CreateEmptySkinDef()
+        private static SkinDef CreateSkinDef(SkinDef template, GameObject fallbackRoot)
         {
             var harmony = new Harmony(AlchemistPlugin.PluginGUID + ".skins");
             MethodInfo awake = AccessTools.Method(typeof(SkinDef), "Awake");
@@ -97,7 +102,10 @@ namespace AlchemistMod.Survivor
                 harmony.Patch(awake, prefix: new HarmonyMethod(typeof(AlchemistSkins), nameof(SkipAwake)));
             try
             {
+                if (template) return Object.Instantiate(template);
+
                 var skin = ScriptableObject.CreateInstance<SkinDef>();
+                skin.rootObject = fallbackRoot;
                 FillNullArrays(skin);
 
                 // Newer game versions keep renderer / mesh data on a separate SkinDefParams asset.
@@ -169,15 +177,28 @@ namespace AlchemistMod.Survivor
         private readonly Dictionary<Material, Material> tintedToOriginal = new Dictionary<Material, Material>();
         private readonly Dictionary<(Material, int), Material> cache = new Dictionary<(Material, int), Material>();
 
+        private CharacterModel.RendererInfo[] prefabRendererInfos;
+
         private void Awake()
         {
             characterModel = GetComponent<CharacterModel>();
             skinController = GetComponent<ModelSkinController>();
+            // Safety net: remember the renderers the model started with, in case a skin empties the list.
+            if (characterModel && characterModel.baseRendererInfos != null && characterModel.baseRendererInfos.Length > 0)
+                prefabRendererInfos = (CharacterModel.RendererInfo[])characterModel.baseRendererInfos.Clone();
         }
 
         private void LateUpdate()
         {
-            if (!characterModel || characterModel.baseRendererInfos == null) return;
+            if (!characterModel) return;
+            if ((characterModel.baseRendererInfos == null || characterModel.baseRendererInfos.Length == 0) && prefabRendererInfos != null)
+            {
+                characterModel.baseRendererInfos = (CharacterModel.RendererInfo[])prefabRendererInfos.Clone();
+                foreach (CharacterModel.RendererInfo info in prefabRendererInfos)
+                    if (info.renderer) info.renderer.enabled = true;
+                appliedSkin = -1;
+            }
+            if (characterModel.baseRendererInfos == null) return;
             int skin = skinController ? skinController.currentSkinIndex : 0;
             bool skinChanged = skin != appliedSkin;
             appliedSkin = skin;

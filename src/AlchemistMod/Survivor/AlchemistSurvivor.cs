@@ -53,8 +53,8 @@ namespace AlchemistMod.Survivor
             BodyPrefab = bandit.InstantiateClone(BodyName, true);
 
             ConfigureBody();
-            Dictionary<SkillSlot, Sprite> placeholderIcons = StripBanditSkills();
-            BuildSkills(placeholderIcons);
+            StripBanditSkills();
+            BuildSkills();
             ConfigureStateMachines();
             BodyPrefab.AddComponent<PotionSelector>();
 
@@ -91,35 +91,15 @@ namespace AlchemistMod.Survivor
             body.baseJumpCount = 1;
         }
 
-        /// <summary>Removes Bandit's skill slots, keeping their icons as placeholders.</summary>
-        private static Dictionary<SkillSlot, Sprite> StripBanditSkills()
+        /// <summary>Removes the placeholder's own skill slots.</summary>
+        private static void StripBanditSkills()
         {
-            var icons = new Dictionary<SkillSlot, Sprite>();
-            var locator = BodyPrefab.GetComponent<SkillLocator>();
-
-            void Grab(SkillSlot slot, GenericSkill skill)
-            {
-                if (skill && skill.skillFamily && skill.skillFamily.variants != null && skill.skillFamily.variants.Length > 0)
-                    icons[slot] = skill.skillFamily.variants[0].skillDef ? skill.skillFamily.variants[0].skillDef.icon : null;
-            }
-
-            if (locator)
-            {
-                Grab(SkillSlot.Primary, locator.primary);
-                Grab(SkillSlot.Secondary, locator.secondary);
-                Grab(SkillSlot.Utility, locator.utility);
-                Grab(SkillSlot.Special, locator.special);
-            }
-
             foreach (GenericSkill skill in BodyPrefab.GetComponents<GenericSkill>())
                 Object.DestroyImmediate(skill);
-
-            return icons;
         }
 
-        private static void BuildSkills(Dictionary<SkillSlot, Sprite> icons)
+        private static void BuildSkills()
         {
-            Sprite Icon(SkillSlot slot) => icons.TryGetValue(slot, out var s) ? s : null;
             var locator = BodyPrefab.GetComponent<SkillLocator>();
 
             // Passive
@@ -129,30 +109,29 @@ namespace AlchemistMod.Survivor
                 skillNameToken = T("PASSIVE_NAME"),
                 skillDescriptionToken = T("PASSIVE_DESC"),
                 keywordToken = T("KEYWORD_INFECT"),
-                icon = Icon(SkillSlot.Special),
+                icon = Icons.Get("skill_passive"),
             };
 
             // Primary. The slot shows the generic "Throw Potion"; in-game it is overridden by the active potion.
-            PrimaryThrow = NewSkill("ThrowPotion", T("PRIMARY_NAME"), T("PRIMARY_DESC"), Icon(SkillSlot.Primary),
+            PrimaryThrow = NewSkill("ThrowPotion", T("PRIMARY_NAME"), T("PRIMARY_DESC"), Icons.Get("skill_throw"),
                 typeof(ThrowPotion), "Weapon", 0f, InterruptPriority.Any, combat: true);
-            PrimaryThrow.keywordTokens = new[] { T("KEYWORD_INFECT") };
-            foreach (PotionDef potion in PotionCatalog.Potions) potion.skillDef.icon = Icon(SkillSlot.Primary);
+            PrimaryThrow.keywordTokens = new[] { T("KEYWORD_INFECT"), T("KEYWORD_FESTER") };
 
             // Secondaries
-            Knife = NewSkill("CutthroatKnife", T("SECONDARY_KNIFE_NAME"), T("SECONDARY_KNIFE_DESC"), Icon(SkillSlot.Secondary),
+            Knife = NewSkill("CutthroatKnife", T("SECONDARY_KNIFE_NAME"), T("SECONDARY_KNIFE_DESC"), Icons.Get("skill_knife"),
                 typeof(CutthroatKnife), "Weapon", 4f, InterruptPriority.Skill, combat: true);
             Knife.keywordTokens = new[] { T("KEYWORD_LACERATE"), T("KEYWORD_INFECT") };
 
-            Elbow = NewSkill("ThrowElbow", T("SECONDARY_ELBOW_NAME"), T("SECONDARY_ELBOW_DESC"), Icon(SkillSlot.Secondary),
+            Elbow = NewSkill("ThrowElbow", T("SECONDARY_ELBOW_NAME"), T("SECONDARY_ELBOW_DESC"), Icons.Get("skill_elbow"),
                 typeof(ThrowElbow), "Weapon", 7f, InterruptPriority.Skill, combat: true);
             Elbow.keywordTokens = new[] { "KEYWORD_STUNNING", T("KEYWORD_CONFUSE") };
 
             // Utility
-            Vault = NewSkill("VapourVault", T("UTILITY_NAME"), T("UTILITY_DESC"), Icon(SkillSlot.Utility),
+            Vault = NewSkill("VapourVault", T("UTILITY_NAME"), T("UTILITY_DESC"), Icons.Get("skill_vault"),
                 typeof(VapourVault), "Body", 7f, InterruptPriority.PrioritySkill, combat: false);
 
             // Special
-            TransmuteSkill = NewSkill("Transmute", T("SPECIAL_NAME"), T("SPECIAL_DESC"), Icon(SkillSlot.Special),
+            TransmuteSkill = NewSkill("Transmute", T("SPECIAL_NAME"), T("SPECIAL_DESC"), Icons.Get("skill_transmute"),
                 typeof(Transmute), "Weapon", 12f, InterruptPriority.Skill, combat: true);
 
             locator.primary = AddSlot("AlchemistPrimary", new[] { PrimaryThrow }, 0);

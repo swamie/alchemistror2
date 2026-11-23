@@ -82,7 +82,7 @@ namespace AlchemistMod.SkillStates
     public class CutthroatKnife : CloseRangeStrike
     {
         protected override float BaseDuration => 0.45f;
-        protected override float DamageCoefficient => 3.6f;
+        protected override float DamageCoefficient => 3f;
         protected override float Range => 5.5f;
         protected override string SoundString => "Play_bandit2_m2_slash";
 
@@ -99,7 +99,7 @@ namespace AlchemistMod.SkillStates
     public class ThrowElbow : CloseRangeStrike
     {
         protected override float BaseDuration => 0.5f;
-        protected override float DamageCoefficient => 2.5f;
+        protected override float DamageCoefficient => 2.2f;
         protected override float Range => 4.5f;
         protected override string SoundString => "Play_loader_m1_impact";
         protected override float Force => 1200f;

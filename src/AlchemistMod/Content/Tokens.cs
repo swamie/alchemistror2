@@ -28,31 +28,34 @@ namespace AlchemistMod.Content
             Add("PASSIVE_NAME", "Potion Belt");
             Add("PASSIVE_DESC",
                 "Carry <style=cIsUtility>three potions</style> chosen in the loadout. <style=cIsUtility>Scroll</style> to swap the active one. " +
+                "All your damage over time <style=cIsDamage>Festers</style>: weak at first, brutal if left running. " +
                 "Starts with the <style=cIsUtility>Clockwork Crow</style>.");
 
             // ---- Keywords ----
             Add("KEYWORD_LACERATE",
-                "<style=cKeywordName>Lacerate</style><style=cSub>Bleeds for <style=cIsDamage>80% base damage</style> per second for 5s. Stacks.</style>");
+                "<style=cKeywordName>Lacerate</style><style=cSub>Bleeds for <style=cIsDamage>40% base damage</style> per second for 5s. Stacks. Festers.</style>");
             Add("KEYWORD_INFECT",
                 "<style=cKeywordName>Infect</style><style=cSub>Any potion that hits a <style=cIsDamage>lacerated</style> enemy consumes the cuts and inflicts " +
-                "<style=cIsDamage>Infected Wound</style> for <style=cIsDamage>240% base damage</style> per second for 6s, <style=cIsDamage>+50%</style> per extra cut.</style>");
+                "<style=cIsDamage>Infected Wound</style> for <style=cIsDamage>120% base damage</style> per second for 6s, <style=cIsDamage>+35%</style> per extra cut. Festers.</style>");
+            Add("KEYWORD_FESTER",
+                "<style=cKeywordName>Fester</style><style=cSub>Your damage over time starts at <style=cIsDamage>40%</style> strength and grows <style=cIsDamage>+15% every second</style> an enemy stays afflicted, up to <style=cIsDamage>400%</style>. Resets if it gets a 2s break.</style>");
             Add("KEYWORD_CONFUSE",
                 "<style=cKeywordName>Confuse</style><style=cSub>For 3s the target <style=cIsUtility>attacks its own allies</style> and can be hurt by them. Does not work on bosses.</style>");
 
             // ---- Skills ----
             Add("PRIMARY_NAME", "Throw Potion");
             Add("PRIMARY_DESC",
-                "Lob your active potion for <style=cIsDamage>200% damage</style>. It shatters on impact and applies its effect. " +
-                "<style=cIsUtility>Scroll</style> to switch potions.");
+                "Lob your active potion for <style=cIsDamage>180% damage</style>. It shatters into <style=cIsUtility>drifting gas</style> that keeps applying its effect. " +
+                "<style=cIsUtility>Scroll</style> to switch potions. Potions share a short cooldown.");
 
             Add("SECONDARY_KNIFE_NAME", "Cutthroat Knife");
             Add("SECONDARY_KNIFE_DESC",
-                "<style=cIsDamage>Lacerate</style>. Slash an enemy right in front of you for <style=cIsDamage>360% damage</style>. " +
+                "<style=cIsDamage>Lacerate</style>. Slash an enemy right in front of you for <style=cIsDamage>300% damage</style>. " +
                 "Follow up with a potion to <style=cIsDamage>Infect</style> the wound.");
 
             Add("SECONDARY_ELBOW_NAME", "Thrown Elbow");
             Add("SECONDARY_ELBOW_DESC",
-                "<style=cIsDamage>Stunning</style>. <style=cIsUtility>Confuse</style>. Drive an elbow into a close enemy for <style=cIsDamage>250% damage</style>. " +
+                "<style=cIsDamage>Stunning</style>. <style=cIsUtility>Confuse</style>. Drive an elbow into a close enemy for <style=cIsDamage>220% damage</style>. " +
                 "It turns on its allies for <style=cIsUtility>3s</style>.");
 
             Add("UTILITY_NAME", "Vapour Vault");
@@ -63,7 +66,7 @@ namespace AlchemistMod.Content
             Add("SPECIAL_NAME", "Transmute");
             Add("SPECIAL_DESC",
                 "Detonate <style=cIsDamage>all of your damage over time</style> on enemies within <style=cIsUtility>25m</style>. " +
-                "They instantly take <style=cIsDamage>150%</style> of the damage it had left, plus <style=cIsDamage>300% damage</style>.");
+                "They instantly take all the damage it had left <style=cIsDamage>(with Fester)</style>, plus <style=cIsDamage>200% damage</style>.");
 
             // ---- Potions ----
             foreach (PotionDef potion in PotionCatalog.Potions)
@@ -77,7 +80,7 @@ namespace AlchemistMod.Content
             Add("ITEM_CROW_PICKUP", "A brass familiar that worsens your enemies' ailments.");
             Add("ITEM_CROW_DESC",
                 "Every <style=cIsUtility>3.5s</style> the crow pecks the most afflicted enemy within <style=cIsUtility>45m</style> for " +
-                "<style=cIsDamage>150% damage</style>, adding <style=cIsDamage>one more stack of every damage over time</style> on it " +
+                "<style=cIsDamage>100% damage</style>, adding <style=cIsDamage>one more stack of every damage over time</style> on it " +
                 "and extending its debuffs by <style=cIsUtility>1s</style>. <style=cStack>Alchemist only. Cannot be scrapped.</style>");
             Add("ITEM_CROW_LORE", "\"It doesn't eat. It doesn't sleep. It does, apparently, keep notes.\"");
 

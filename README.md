@@ -2,7 +2,7 @@
 
 A survivor built around **stacking damage over time and debuffs**. She throws potions, cuts enemies open, infects the wounds, then cashes everything in at once.
 
-> **Status: 0.1.0, playable prototype.** All the gameplay code is here. The model, icons and VFX are **borrowed vanilla placeholders** (see [What is placeholder](#what-is-placeholder)).
+> **Status: 0.2.0, playable prototype.** All the gameplay code is here. Icons are custom; the in-game model is still a **recoloured vanilla placeholder** (see [What is placeholder](#what-is-placeholder)).
 
 ---
 
@@ -10,18 +10,24 @@ A survivor built around **stacking damage over time and debuffs**. She throws po
 
 | Slot | Skill | What it does |
 |---|---|---|
-| Passive | **Potion Belt** | Carry 3 potions picked in the loadout. **Scroll wheel** swaps the active one. Starts with the Clockwork Crow. |
-| Primary | **Throw Potion** | Lobs the active potion (Commando grenade arc and speed). Shatters on impact for **200%** plus the potion's effect. |
-| Secondary | **Cutthroat Knife** | Very close slash, **360%**, **always Lacerates**. 4s cooldown. |
-| Secondary (alt) | **Thrown Elbow** | Very close hit, **250%**, **stuns** and **confuses** for 3s (target fights its own allies). 7s cooldown. |
+| Passive | **Potion Belt / Fester** | Carry 3 potions picked in the loadout. **Scroll wheel** swaps the active one. All her DoTs **Fester** (see below). Starts with the Clockwork Crow. |
+| Primary | **Throw Potion** | Lobs the active potion, tumbling end over end (Commando grenade arc and speed). Shatters into glass and **3 drifting gas clouds** that keep applying the effect. **180%**. All potions share a 0.75s cooldown. |
+| Secondary | **Cutthroat Knife** | Very close slash, **300%**, **always Lacerates**. 4s cooldown. |
+| Secondary (alt) | **Thrown Elbow** | Very close hit, **220%**, **stuns** and **confuses** for 3s (target fights its own allies). 7s cooldown. |
 | Utility | **Vapour Vault** | Smash a fume vial at your feet and vault backwards. Cloud slows enemies 40% for 5s, you get cloaked speed. 7s cooldown. |
-| Special | **Transmute** | Every enemy within 25m takes **150% of the DoT damage you still had ticking on it**, plus **300%**. Your DoTs are used up. 12s cooldown. |
+| Special | **Transmute** | Every enemy within 25m instantly takes **all the DoT damage you still had ticking on it** (with Fester), plus **200%**. Your DoTs are used up. 12s cooldown. |
 
 ### Infect combo
 
 1. Cut with **Cutthroat Knife** (applies Laceration, a bleed).
 2. Hit that enemy with **any potion**.
-3. The cuts are consumed and become **Infected Wound**: 240% base damage per second for 6s, +50% per extra cut.
+3. The cuts are consumed and become **Infected Wound**: 120% base damage per second for 6s, +35% per extra cut.
+
+### Fester (her scaling)
+
+Every DoT tick she owns is multiplied by how long that enemy has been continuously afflicted by her:
+**0.4x at the start, +0.15x per second, capped at 4x** (about 24s). The enemy shows a *Festering* buff counting the seconds. A 2s break resets it.
+So fights start as a tickle and end in heavy ticks.
 
 ### The 9 potions
 
@@ -34,16 +40,16 @@ Pick any 3 (duplicates allowed) on the three **Potion Belt** rows of the loadout
 | **Corrosive Vitriol** | Corroded: -6 armor per stack, up to 10. |
 | **Frostbite Draught** | Chilled: -12% speed per stack. At 5 stacks the enemy freezes. |
 | **Hemlock Philter** | Enfeebled: enemy deals 30% less damage and attacks 25% slower for 6s. |
-| **Catalyst Elixir** | +50% hit damage per unique debuff on the target, and extends your DoTs on it by 2s. |
+| **Catalyst Elixir** | +25% hit damage per unique debuff on the target. The flask hit extends your DoTs on it by 2s. |
 | **Miasma Spores** | Contagious: if it dies, its DoTs and debuffs jump to enemies within 15m. |
-| **Sanguine Draught** | Bloodlet: DoT damage it takes heals you for 15%. |
-| **Volatile Concoction** | No debuff. Bigger, 320% blast. |
+| **Sanguine Draught** | Bloodlet: DoT damage it takes heals you for 10%. |
+| **Volatile Concoction** | No debuff, no gas. Bigger, 280% blast. |
 
 ### Clockwork Crow (exclusive red item)
 
 - She spawns with it every run. Nothing else can get it.
 - Can't be scrapped, printed, duplicated, rerolled, stolen, copied, or dropped by chests (`canRemove = false`, `WorldUnique`, `CannotSteal`, `CannotCopy`, `CannotDuplicate`, `AIBlacklist`).
-- Every 3.5s it pecks the **most afflicted** enemy within 45m for 150%, adds one more stack of every DoT already on it, and extends its debuffs by 1s.
+- Every 3.5s it pecks the **most afflicted** enemy within 45m for 100%, adds one more stack of every DoT already on it, and extends its debuffs by 1s.
 
 ### Skins
 
@@ -62,11 +68,11 @@ Code can't make 3D art, so these are vanilla stand-ins that need real assets:
 
 - **Model and animations:** a recoloured **Bandit** (hat and long coat is the closest vanilla plague doctor silhouette). A proper female plague-doctor model without the mask needs to be made in Blender, rigged, and set up in a Unity project.
 - **Skins:** colour palettes over the placeholder model. Once a real model exists, each skin becomes its own material set / mesh.
-- **Potion models:** Commando's grenade, tinted per potion.
-- **Plague pool and fume cloud:** Acrid's acid pool, tinted.
-- **Crow:** Wax Quail's bird model, painted gunmetal.
-- **Icons:** skill icons are Bandit's, buff icons reuse vanilla ones, skin icons are generated colour swatches.
-- **Potion belt HUD:** a simple on-screen box row. Can be turned off in config.
+- **Potion models in flight:** Commando's grenade, tinted per potion. Real flask models exist in `art/` (Blender) and need an AssetBundle.
+- **Plague pool and fume cloud:** Acrid's acid pool, tinted. Gas clouds and glass shatter are particle effects built in code.
+- **Crow:** Wax Quail's bird model, painted gunmetal. A real crow model is in `art/`.
+- **Icons:** custom, generated by `art/make_icons.py` (potion and crow icons are Blender renders).
+- **Skins:** colour palettes over the placeholder model.
 
 ### Replacing the placeholder model
 
@@ -105,6 +111,10 @@ Offline build: point it at a folder holding the reference dlls (game `Managed` f
 - Scroll wheel switching on/off, invert scroll
 - Optional next / previous potion keys (useful for controller remapping)
 - Show / hide the potion belt HUD
+
+## Potion belt HUD
+
+Three potion icons sit just above the skill bar. The active one is bright and full size; a dark fill shows the shared throw cooldown. Turn it off in config.
 
 ## Code map
 

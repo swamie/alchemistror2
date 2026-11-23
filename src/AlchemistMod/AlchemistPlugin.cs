@@ -31,7 +31,7 @@ namespace AlchemistMod
     {
         public const string PluginGUID = "swamie.Alchemist";
         public const string PluginName = "Alchemist";
-        public const string PluginVersion = "0.1.0";
+        public const string PluginVersion = "0.2.0";
 
         /// <summary>Prefix for every language token and asset name we register.</summary>
         public const string Prefix = "SWAMIE_ALCHEMIST_";
@@ -55,6 +55,7 @@ namespace AlchemistMod
             Tokens.Init();
 
             DebuffHooks.Init();
+            Fester.Init(new HarmonyLib.Harmony(PluginGUID));
             ClockworkCrow.InitHooks();
             AlchemistContentPack.Init();
 

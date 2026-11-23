@@ -11,19 +11,22 @@ namespace AlchemistMod.SkillStates
     /// </summary>
     public class ThrowPotion : BaseSkillState
     {
-        public static float baseDuration = 0.55f;
+        public static float baseDuration = 0.5f;
         public static float fireFraction = 0.3f;
+        /// <summary>Shared between all potions, so swapping can't skip it.</summary>
+        public static float sharedCooldown = 0.75f;
 
         private float duration;
         private bool hasFired;
         private PotionDef potion;
+        private PotionSelector selector;
 
         public override void OnEnter()
         {
             base.OnEnter();
             duration = baseDuration / attackSpeedStat;
 
-            var selector = GetComponent<PotionSelector>();
+            selector = GetComponent<PotionSelector>();
             potion = selector ? selector.CurrentPotion : null;
             if (potion == null && activatorSkillSlot) potion = PotionCatalog.FromSkillDef(activatorSkillSlot.skillDef);
             if (potion == null && PotionCatalog.Potions.Count > 0) potion = PotionCatalog.Potions[0];
@@ -48,6 +51,7 @@ namespace AlchemistMod.SkillStates
         {
             hasFired = true;
             Util.PlaySound("Play_commando_M2_grenade_throw", gameObject);
+            if (selector) selector.StartThrowCooldown(sharedCooldown / attackSpeedStat);
 
             if (!isAuthority || potion == null || !potion.projectilePrefab) return;
 
@@ -67,7 +71,8 @@ namespace AlchemistMod.SkillStates
 
         public override InterruptPriority GetMinimumInterruptPriority()
         {
-            return hasFired ? InterruptPriority.Any : InterruptPriority.Skill;
+            // Other skills can cancel the throw animation; another potion has to wait for it to end.
+            return InterruptPriority.Skill;
         }
     }
 }
